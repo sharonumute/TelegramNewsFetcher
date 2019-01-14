@@ -40,7 +40,7 @@ async function retrievePosts(ctx, params) {
 bot.use(ctx => {
   // Twitter API parameters to fetch last unseen tweet
   var params = {
-    screen_name: process.env.TWITER_USER,
+    screen_name: process.env.TWITTER_USER,
     since_id: undefined
   };
 
