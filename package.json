@@ -1,0 +1,22 @@
+{
+  "name": "cnnbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "Sharon Umute",
+  "license": "ISC",
+  "dependencies": {
+    "async-polling": "^0.2.1",
+    "axios": "^0.18.0",
+    "body-parser": "^1.18.3",
+    "dotenv": "^6.2.0",
+    "express": "^4.16.4",
+    "rss-parser": "^3.6.2",
+    "telegraf": "^3.26.0",
+    "twitter": "^1.7.1"
+  }
+}
