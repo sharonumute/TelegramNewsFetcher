@@ -3,6 +3,7 @@ var Twitter = require("twitter");
 var AsyncPolling = require("async-polling");
 const Telegraf = require("telegraf");
 
+// Create bot and twitter objects
 const bot = new Telegraf(process.env.BOT_TOKEN);
 var client = new Twitter({
   consumer_key: process.env.TWITTER_CONSUMER_KEY,
@@ -11,6 +12,7 @@ var client = new Twitter({
   access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 });
 
+// Format twitter's 'created_at' date
 function formatTwitterDate(created_at) {
   return new Date(created_at);
 }
@@ -36,10 +38,13 @@ async function retrievePosts(ctx, params) {
 }
 
 bot.use(ctx => {
+  // Twitter API parameters to fetch last unseen tweet
   var params = {
-    screen_name: "cnnbrk",
+    screen_name: process.env.TWITER_USER,
     since_id: undefined
   };
+
+  // Poll every 10 seconds
   AsyncPolling(function(end) {
     retrievePosts(ctx, params);
     console.log(params);
