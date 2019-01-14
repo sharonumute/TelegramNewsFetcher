@@ -2,6 +2,7 @@ require("dotenv").config();
 var Twitter = require("twitter");
 var AsyncPolling = require("async-polling");
 const Telegraf = require("telegraf");
+var unescape = require("lodash.unescape");
 
 // Create bot and twitter objects
 const bot = new Telegraf(process.env.BOT_TOKEN);
@@ -12,9 +13,23 @@ var client = new Twitter({
   access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 });
 
-// Format twitter's 'created_at' date
-function formatTwitterDate(created_at) {
-  return new Date(created_at);
+function constructPost(text) {
+  let commentsTextLink = `[Comments](${text.split(" ").splice(-1)[0]})`;
+  let textWithoutTwitterLink = text.substring(0, text.lastIndexOf(" "));
+  let articleTextLink = `[Article](${
+    textWithoutTwitterLink.split(" ").splice(-1)[0]
+  })`;
+  let textWithoutTwitterOrArticleLink = textWithoutTwitterLink.substring(
+    0,
+    textWithoutTwitterLink.lastIndexOf(" ")
+  );
+  return (
+    `*${textWithoutTwitterOrArticleLink}*` +
+    "\n" +
+    articleTextLink +
+    ", " +
+    commentsTextLink
+  );
 }
 
 async function retrievePosts(ctx, params) {
@@ -27,12 +42,11 @@ async function retrievePosts(ctx, params) {
       let tweet = tweets[0];
       ctx.telegram.sendMessage(
         process.env.CHANNEL_ID,
-        formatTwitterDate(tweet.created_at) +
-          ": " +
-          tweet.text.split(" ").splice(-1)[0]
+        constructPost(unescape(tweet.full_text)),
+        { parse_mode: "Markdown" }
       );
-      console.log(tweets[0]);
-      params.since_id = tweets[0].id_str;
+      console.log(tweet);
+      params.since_id = tweet.id_str;
     }
   });
 }
@@ -41,13 +55,13 @@ bot.use(ctx => {
   // Twitter API parameters to fetch last unseen tweet
   var params = {
     screen_name: process.env.TWITTER_USER,
-    since_id: undefined
+    since_id: undefined,
+    tweet_mode: "extended"
   };
 
   // Poll every 10 seconds
   AsyncPolling(function(end) {
     retrievePosts(ctx, params);
-    console.log(params);
     end();
   }, 10000).run();
 });
