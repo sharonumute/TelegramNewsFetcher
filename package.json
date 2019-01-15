@@ -4,7 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js"
   },
   "author": "Sharon Umute",
@@ -12,7 +11,6 @@
   "dependencies": {
     "async-polling": "^0.2.1",
     "dotenv": "^6.2.0",
-    "lodash.unescape": "^4.0.1",
     "telegraf": "^3.26.0",
     "twitter": "^1.7.1",
     "url-unshort": "^5.0.0"

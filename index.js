@@ -1,70 +1,70 @@
-require("dotenv").config();
-var Twitter = require("twitter");
-var AsyncPolling = require("async-polling");
-const Telegraf = require("telegraf");
-var unescape = require("lodash.unescape");
-let urlExpander = require("url-unshort")();
+require('dotenv').config();
+const Twitter = require('twitter');
+const Telegram = require('telegraf/telegram');
+const urlExpander = require('url-unshort')();
+const AsyncPolling = require('async-polling');
 
 // Create bot and twitter objects
-const bot = new Telegraf(process.env.BOT_TOKEN);
-var client = new Twitter({
-  consumer_key: process.env.TWITTER_CONSUMER_KEY,
-  consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
-  access_token_key: process.env.TWITTER_ACCESS_TOKEN_KEY,
-  access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
+const client = new Twitter({
+    consumer_key: process.env.TWITTER_CONSUMER_KEY,
+    consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+    access_token_key: process.env.TWITTER_ACCESS_TOKEN_KEY,
+    access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 });
 
 async function twitterTextTokenizer(text) {
-  let textParts = text.split(" ");
-  let links = textParts.splice(-2);
-  const articleLink = await urlExpander.expand(links[0]);
+    const textParts = text.split(" ");
+    const links = textParts.splice(-2);
+    let articleLink;
 
-  console.log("testing: " + articleLink);
-  return {
-    tweet: textParts.join(" "),
-    articleLink: articleLink,
-    twitterLink: links[1]
-  };
+    try {
+        articleLink = await urlExpander.expand(links[0]);
+    } catch (e) {
+        articleLink = links[0];
+    }
+
+    return {
+        tweet: textParts.join(' '),
+        articleLink: articleLink,
+        twitterLink: links[1]
+    };
 }
 
 async function constructPost(text) {
-  let tweetObject = await twitterTextTokenizer(text);
-  return `*${tweetObject.tweet}* \n[Article](${
-    tweetObject.articleLink
-  }), [Comments](${tweetObject.twitterLink})`;
+    const tweet = await twitterTextTokenizer(text);
+    return `*${tweet.tweet}* \n[Article](${
+        tweet.articleLink
+        }), [Comments](${tweet.twitterLink})`;
 }
 
-async function retrievePosts(ctx, params) {
-  client.get("statuses/user_timeline", params, async function(
-    error,
-    tweets,
-    response
-  ) {
-    if (!error && tweets[0] != undefined) {
-      let tweet = tweets[0];
-      const message = await constructPost(unescape(tweet.full_text));
-      ctx.telegram.sendMessage(process.env.CHANNEL_ID, message, {
-        parse_mode: "Markdown"
-      });
-      console.log(tweet);
-      params.since_id = tweet.id_str;
+async function retrievePosts(bot, params) {
+    const tweets = await client.get('statuses/user_timeline', params);
+    if (!tweets[0]) {
+        return;
     }
-  });
+
+    let tweet = tweets[0];
+    const message = await constructPost(decodeURI(tweet.full_text));
+    bot.sendMessage(process.env.CHANNEL_ID, message, {
+        parse_mode: 'Markdown'
+    });
+
+    params.since_id = tweet.id_str;
+    return true;
 }
 
-bot.use(ctx => {
-  // Twitter API parameters to fetch last unseen tweet
-  var params = {
-    screen_name: process.env.TWITTER_USER,
-    since_id: undefined,
-    tweet_mode: "extended"
-  };
+async function start() {
+    const bot = new Telegram(process.env.BOT_TOKEN);
+    const params = {
+        screen_name: process.env.TWITTER_USER,
+        since_id: undefined,
+        tweet_mode: 'extended'
+    };
 
-  // Poll every 10 seconds
-  AsyncPolling(function(end) {
-    retrievePosts(ctx, params);
-    end();
-  }, 10000).run();
-});
+    AsyncPolling(async (end) => {
+        await retrievePosts(bot, params);
+        end();
+    }, 10e3).run();
+}
 
-bot.launch();
+start();
