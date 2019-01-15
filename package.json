@@ -12,7 +12,6 @@
     "async-polling": "^0.2.1",
     "dotenv": "^6.2.0",
     "telegraf": "^3.26.0",
-    "twitter": "^1.7.1",
-    "url-unshort": "^5.0.0"
+    "twitter": "^1.7.1"
   }
 }
