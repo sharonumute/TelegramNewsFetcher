@@ -11,17 +11,10 @@
   "license": "ISC",
   "dependencies": {
     "async-polling": "^0.2.1",
-    "axios": "^0.18.0",
-    "body-parser": "^1.18.3",
-    "dom-parser": "^0.1.5",
     "dotenv": "^6.2.0",
-    "expand-url": "^0.1.3",
-    "express": "^4.16.4",
     "lodash.unescape": "^4.0.1",
-    "rss-parser": "^3.6.2",
     "telegraf": "^3.26.0",
     "twitter": "^1.7.1",
-    "url-unshort": "^5.0.0",
-    "url-unshorten": "^1.0.4"
+    "url-unshort": "^5.0.0"
   }
 }
