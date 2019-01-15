@@ -65,6 +65,7 @@ async function retrievePosts(bot) {
       parse_mode: 'Markdown',
     });
   });
+
   return true;
 }
 
