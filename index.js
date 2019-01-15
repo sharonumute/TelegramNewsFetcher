@@ -3,6 +3,7 @@ var Twitter = require("twitter");
 var AsyncPolling = require("async-polling");
 const Telegraf = require("telegraf");
 var unescape = require("lodash.unescape");
+let urlExpander = require("url-unshort")();
 
 // Create bot and twitter objects
 const bot = new Telegraf(process.env.BOT_TOKEN);
@@ -13,38 +14,38 @@ var client = new Twitter({
   access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 });
 
-function constructPost(text) {
-  let commentsTextLink = `[Comments](${text.split(" ").splice(-1)[0]})`;
-  let textWithoutTwitterLink = text.substring(0, text.lastIndexOf(" "));
-  let articleTextLink = `[Article](${
-    textWithoutTwitterLink.split(" ").splice(-1)[0]
-  })`;
-  let textWithoutTwitterOrArticleLink = textWithoutTwitterLink.substring(
-    0,
-    textWithoutTwitterLink.lastIndexOf(" ")
-  );
-  return (
-    `*${textWithoutTwitterOrArticleLink}*` +
-    "\n" +
-    articleTextLink +
-    ", " +
-    commentsTextLink
-  );
+async function twitterTextTokenizer(text) {
+  let textParts = text.split(" ");
+  let links = textParts.splice(-2);
+  const articleLink = await urlExpander.expand(links[0]);
+
+  console.log("testing: " + articleLink);
+  return {
+    tweet: textParts.join(" "),
+    articleLink: articleLink,
+    twitterLink: links[1]
+  };
+}
+
+async function constructPost(text) {
+  let tweetObject = await twitterTextTokenizer(text);
+  return `*${tweetObject.tweet}* \n[Article](${
+    tweetObject.articleLink
+  }), [Comments](${tweetObject.twitterLink})`;
 }
 
 async function retrievePosts(ctx, params) {
-  client.get("statuses/user_timeline", params, function(
+  client.get("statuses/user_timeline", params, async function(
     error,
     tweets,
     response
   ) {
     if (!error && tweets[0] != undefined) {
       let tweet = tweets[0];
-      ctx.telegram.sendMessage(
-        process.env.CHANNEL_ID,
-        constructPost(unescape(tweet.full_text)),
-        { parse_mode: "Markdown" }
-      );
+      const message = await constructPost(unescape(tweet.full_text));
+      ctx.telegram.sendMessage(process.env.CHANNEL_ID, message, {
+        parse_mode: "Markdown"
+      });
       console.log(tweet);
       params.since_id = tweet.id_str;
     }
