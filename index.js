@@ -11,33 +11,67 @@ const client = new Twitter({
   access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
 });
 
-const params = {
-  screen_name: process.env.TWITTER_USER,
+const cnn = {
+  screen_name: 'CNNBrk',
+  display_name: 'CNN',
   tweet_mode: 'extended',
   since_id: undefined,
   trim_user: true,
 };
 
-async function twitterTextTokenizer(text, entities) {
+const bbc = {
+  screen_name: 'BBCBreaking',
+  display_name: 'BBC',
+  tweet_mode: 'extended',
+  since_id: undefined,
+  trim_user: true,
+};
+
+function cnnTextTokenizer(tweet) {
+  const text = decodeURI(tweet.full_text);
+  const { entities } = tweet;
+
   const textParts = text.split(' ');
-  const links = textParts.splice(-2);
+  textParts.splice(-2); // Remove last two thing from tweet.
   const articleLink = entities.urls.pop();
   return {
-    tweet: textParts.join(' '),
+    text: textParts.join(' '),
     articleLink: articleLink.expanded_url,
-    twitterLink: links[1],
+    twitterLink: `https://twitter.com/${tweet.screen_name}/${tweet.id_str}`,
   };
 }
 
-async function constructPost(text, entities) {
-  const tweet = await twitterTextTokenizer(text, entities);
-  return `*${tweet.tweet}* \n[Article](${tweet.articleLink}), [Comments](${
-    tweet.twitterLink
+function bbcTextTokenizer(tweet) {
+  const text = decodeURI(tweet.full_text);
+  const { entities } = tweet;
+
+  const textParts = text.split(' ');
+  textParts.splice(-1); // Remove last thing from tweet.
+  const articleLink = entities.urls.pop();
+
+  return {
+    text: textParts.join(' '),
+    articleLink: articleLink.expanded_url,
+    twitterLink: `https://twitter.com/${tweet.screen_name}/${tweet.id_str}`,
+  };
+}
+
+async function constructTwitterPost(tweet, tokenizer) {
+  const result = tokenizer(tweet);
+  console.log(result);
+  return `*${tweet.display_name}*\n${result.text} \n[Article](${result.articleLink}), [Comments](${
+    result.twitterLink
   })`;
 }
 
-async function retrievePosts(bot) {
-  const options = Object.assign({}, params);
+async function sendMessage(bot, message) {
+  bot.sendMessage(process.env.CHANNEL_ID, message, {
+    parse_mode: 'Markdown',
+  });
+}
+
+async function retrieveCNNPosts(bot) {
+  const options = Object.assign({}, cnn);
   if (!options.since_id) {
     options.count = 1;
   }
@@ -50,22 +84,49 @@ async function retrievePosts(bot) {
   tweets = tweets.reverse();
   tweets.forEach(async (tweet) => {
     console.log(tweet);
-    params.since_id = tweet.id_str;
+    cnn.since_id = tweet.id_str;
 
     if (tweet.retweeted_status) {
       tweet = tweet.retweeted_status;
     }
 
-    const message = await constructPost(
-      decodeURI(tweet.full_text),
-      tweet.entities,
-    );
+    tweet.screen_name = options.screen_name;
+    tweet.display_name = options.display_name;
 
-    bot.sendMessage(process.env.CHANNEL_ID, message, {
-      parse_mode: 'Markdown',
-    });
+    const message = await constructTwitterPost(tweet, cnnTextTokenizer);
+    console.log(message);
+    sendMessage(bot, message);
   });
+  return true;
+}
 
+async function retrieveBBCPosts(bot) {
+  const options = Object.assign({}, bbc);
+  if (!options.since_id) {
+    options.count = 1;
+  }
+
+  let tweets = await client.get('statuses/user_timeline', options);
+  if (tweets.length === 0) {
+    return false;
+  }
+
+  tweets = tweets.reverse();
+  tweets.forEach(async (tweet) => {
+    console.log(tweet);
+    bbc.since_id = tweet.id_str;
+
+    if (tweet.retweeted_status) {
+      tweet = tweet.retweeted_status;
+    }
+
+    tweet.screen_name = options.screen_name;
+    tweet.display_name = options.display_name;
+
+    const message = await constructTwitterPost(tweet, bbcTextTokenizer);
+
+    sendMessage(bot, message);
+  });
   return true;
 }
 
@@ -73,9 +134,11 @@ async function start() {
   const bot = new Telegram(process.env.BOT_TOKEN);
 
   AsyncPolling(async (end) => {
-    await retrievePosts(bot);
+    await retrieveCNNPosts(bot);
+    await retrieveBBCPosts(bot);
     end();
-  }, 10e3).run();
+  }, 10e3)
+    .run();
 }
 
 start();
