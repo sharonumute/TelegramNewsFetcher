@@ -37,7 +37,7 @@ function cnnTextTokenizer(tweet) {
   return {
     text: textParts.join(' '),
     articleLink: articleLink.expanded_url,
-    twitterLink: `https://twitter.com/${tweet.screen_name}/${tweet.id_str}`,
+    twitterLink: `https://twitter.com/${tweet.screen_name}/status/${tweet.id_str}`,
   };
 }
 
@@ -52,7 +52,7 @@ function bbcTextTokenizer(tweet) {
   return {
     text: textParts.join(' '),
     articleLink: articleLink.expanded_url,
-    twitterLink: `https://twitter.com/${tweet.screen_name}/${tweet.id_str}`,
+    twitterLink: `https://twitter.com/${tweet.screen_name}/status/${tweet.id_str}`,
   };
 }
 
