@@ -134,9 +134,13 @@ async function start() {
   const bot = new Telegram(process.env.BOT_TOKEN);
 
   AsyncPolling(async (end) => {
-    await retrieveCNNPosts(bot);
-    await retrieveBBCPosts(bot);
-    end();
+    try {
+      await retrieveCNNPosts(bot);
+      await retrieveBBCPosts(bot);
+      end();
+    } catch (e) {
+      console.log('ERROR: ', e);
+    }
   }, 10e3)
     .run();
 }
