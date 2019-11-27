@@ -1,2 +1,5 @@
 # TelegramNewsFetcher
-Follow instructions in https://github.com/motdotla/dotenv to set up environment variables
+Telegram bot that fetches news articles through twitter from the following sources:
+
+- CNN
+- BBC
