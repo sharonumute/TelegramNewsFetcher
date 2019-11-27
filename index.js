@@ -59,9 +59,7 @@ function bbcTextTokenizer(tweet) {
 async function constructTwitterPost(tweet, tokenizer) {
   const result = tokenizer(tweet);
   console.log(result);
-  return `*${tweet.display_name}*\n${result.text} \n[Article](${result.articleLink}), [Comments](${
-    result.twitterLink
-  })`;
+  return `*${tweet.display_name}*\n${result.text} \n[Article](${result.articleLink}), [Comments](${result.twitterLink})`;
 }
 
 async function sendMessage(bot, message) {
@@ -141,8 +139,7 @@ async function start() {
     } catch (e) {
       console.log('ERROR: ', e);
     }
-  }, 10e3)
-    .run();
+  }, 10e3).run();
 }
 
 start();
